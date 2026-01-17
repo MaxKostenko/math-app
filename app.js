@@ -568,6 +568,7 @@ class SpeechRecognizer {
             this.setup();
         }
         this.transcriptOffset = 0;
+        this.lastKnownLength = 0;
         this.recognition.start();
     }
 
