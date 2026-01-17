@@ -16,6 +16,11 @@ Fully functional vanilla JS app with five game modes, voice recognition, and lea
 - "Microphone required" notice (translated)
 - Language selector (7 languages)
 - Speech API support detection
+- **Microphone permission check:**
+  - If granted: shows game mode buttons
+  - If denied: shows "Mic blocked" message with "Request Access" button
+  - If prompt: shows buttons (permission asked on game start)
+  - Monitors permission changes and updates UI automatically
 - CSS grid button layout (2 columns on desktop, 1 on mobile):
   - **Full width:** "Name the Number" (20-second game)
   - **Row 1:** "Sum before 10" | "Sum Survival"

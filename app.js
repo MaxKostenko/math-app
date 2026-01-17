@@ -77,6 +77,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API is supported. Select a mode to begin.',
         speechNotSupported: 'Speech API is NOT supported in this browser. Please use Chrome.',
         micDenied: 'Microphone permission denied. Please allow microphone access.',
+        micBlocked: 'Microphone access is blocked',
+        micBlockedHint: 'Please allow microphone access in your browser settings to play',
+        requestMic: 'Request Microphone Access',
         recognitionStopped: 'Recognition stopped. Select a mode to begin again.',
         languageSet: 'Language set to {lang}. Select a mode to begin.'
     },
@@ -113,6 +116,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API підтримується. Оберіть режим щоб почати.',
         speechNotSupported: 'Speech API не підтримується в цьому браузері. Використовуйте Chrome.',
         micDenied: 'Доступ до мікрофона заборонено. Дозвольте доступ до мікрофона.',
+        micBlocked: 'Доступ до мікрофона заблоковано',
+        micBlockedHint: 'Дозвольте доступ до мікрофона в налаштуваннях браузера',
+        requestMic: 'Запитати доступ до мікрофона',
         recognitionStopped: 'Розпізнавання зупинено. Оберіть режим щоб почати знову.',
         languageSet: 'Мова: {lang}. Оберіть режим щоб почати.'
     },
@@ -149,6 +155,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API wordt ondersteund. Kies een modus om te beginnen.',
         speechNotSupported: 'Speech API wordt niet ondersteund in deze browser. Gebruik Chrome.',
         micDenied: 'Microfoontoegang geweigerd. Sta microfoon toegang toe.',
+        micBlocked: 'Microfoontoegang is geblokkeerd',
+        micBlockedHint: 'Sta microfoontoegang toe in je browserinstellingen om te spelen',
+        requestMic: 'Microfoontoegang aanvragen',
         recognitionStopped: 'Herkenning gestopt. Kies een modus om opnieuw te beginnen.',
         languageSet: 'Taal ingesteld op {lang}. Kies een modus om te beginnen.'
     },
@@ -185,6 +194,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API destekleniyor. Başlamak için bir mod seçin.',
         speechNotSupported: 'Speech API bu tarayıcıda desteklenmiyor. Chrome kullanın.',
         micDenied: 'Mikrofon erişimi reddedildi. Mikrofon erişimine izin verin.',
+        micBlocked: 'Mikrofon erişimi engellendi',
+        micBlockedHint: 'Oynamak için tarayıcı ayarlarından mikrofon erişimine izin verin',
+        requestMic: 'Mikrofon Erişimi İste',
         recognitionStopped: 'Tanıma durduruldu. Tekrar başlamak için bir mod seçin.',
         languageSet: 'Dil: {lang}. Başlamak için bir mod seçin.'
     },
@@ -221,6 +233,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API jest obsługiwane. Wybierz tryb aby rozpocząć.',
         speechNotSupported: 'Speech API nie jest obsługiwane w tej przeglądarce. Użyj Chrome.',
         micDenied: 'Odmowa dostępu do mikrofonu. Zezwól na dostęp do mikrofonu.',
+        micBlocked: 'Dostęp do mikrofonu jest zablokowany',
+        micBlockedHint: 'Zezwól na dostęp do mikrofonu w ustawieniach przeglądarki',
+        requestMic: 'Poproś o dostęp do mikrofonu',
         recognitionStopped: 'Rozpoznawanie zatrzymane. Wybierz tryb aby rozpocząć ponownie.',
         languageSet: 'Język: {lang}. Wybierz tryb aby rozpocząć.'
     },
@@ -257,6 +272,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API падтрымліваецца. Абярыце рэжым каб пачаць.',
         speechNotSupported: 'Speech API не падтрымліваецца ў гэтым браўзеры. Выкарыстоўвайце Chrome.',
         micDenied: 'Доступ да мікрафона забаронены. Дазвольце доступ да мікрафона.',
+        micBlocked: 'Доступ да мікрафона заблакаваны',
+        micBlockedHint: 'Дазвольце доступ да мікрафона ў наладах браўзера',
+        requestMic: 'Запытаць доступ да мікрафона',
         recognitionStopped: 'Распазнаванне спынена. Абярыце рэжым каб пачаць зноў.',
         languageSet: 'Мова: {lang}. Абярыце рэжым каб пачаць.'
     },
@@ -293,6 +311,9 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API stöds. Välj ett läge för att börja.',
         speechNotSupported: 'Speech API stöds inte i denna webbläsare. Använd Chrome.',
         micDenied: 'Mikrofonåtkomst nekad. Tillåt mikrofonåtkomst.',
+        micBlocked: 'Mikrofonåtkomst är blockerad',
+        micBlockedHint: 'Tillåt mikrofonåtkomst i webbläsarens inställningar för att spela',
+        requestMic: 'Begär mikrofonåtkomst',
         recognitionStopped: 'Igenkänning stoppad. Välj ett läge för att börja igen.',
         languageSet: 'Språk: {lang}. Välj ett läge för att börja.'
     }
@@ -1189,8 +1210,25 @@ class UI {
             accuracy: document.getElementById('accuracy'),
             leaderboardList: document.getElementById('leaderboard-list'),
             playAgainBtn: document.getElementById('play-again-btn'),
-            mainMenuBtn: document.getElementById('main-menu-btn')
+            mainMenuBtn: document.getElementById('main-menu-btn'),
+            micBlocked: document.getElementById('mic-blocked'),
+            modeButtons: document.getElementById('mode-buttons'),
+            requestMicBtn: document.getElementById('request-mic-btn')
         };
+    }
+
+    showMicBlocked() {
+        this.elements.micBlocked.classList.remove('hidden');
+        this.elements.modeButtons.classList.add('hidden');
+    }
+
+    showModeButtons() {
+        this.elements.micBlocked.classList.add('hidden');
+        this.elements.modeButtons.classList.remove('hidden');
+    }
+
+    onRequestMicClick(callback) {
+        this.elements.requestMicBtn.addEventListener('click', callback);
     }
 
     showScreen(screenName) {
@@ -1478,12 +1516,56 @@ class App {
             this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechNotSupported'));
             return;
         }
-        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-        this.ui.setStartButtonEnabled(true);
+        this.checkMicPermission();
+    }
+
+    async checkMicPermission() {
+        try {
+            const result = await navigator.permissions.query({ name: 'microphone' });
+            this.handleMicPermissionState(result.state);
+            result.onchange = () => this.handleMicPermissionState(result.state);
+        } catch {
+            // Permissions API not supported, try to request directly
+            this.requestMicAccess();
+        }
+    }
+
+    handleMicPermissionState(state) {
+        if (state === 'granted') {
+            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+            this.ui.showModeButtons();
+            this.ui.setStartButtonEnabled(true);
+        } else if (state === 'denied') {
+            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
+            this.ui.showMicBlocked();
+        } else {
+            // prompt state - show buttons but permission will be asked on game start
+            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+            this.ui.showModeButtons();
+            this.ui.setStartButtonEnabled(true);
+        }
+    }
+
+    async requestMicAccess() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(track => track.stop());
+            this.handleMicPermissionState('granted');
+        } catch (err) {
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                this.handleMicPermissionState('denied');
+            } else {
+                // Other error, still show buttons and let it fail on game start
+                this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+                this.ui.showModeButtons();
+                this.ui.setStartButtonEnabled(true);
+            }
+        }
     }
 
     bindEvents() {
         this.ui.onLangChange((lang) => this.handleLangChange(lang));
+        this.ui.onRequestMicClick(() => this.requestMicAccess());
         this.ui.onStartClick(() => this.startGame(GameModes.NAME_THE_NUMBER));
         this.ui.onStartSubtractionClick(() => this.startGame(GameModes.SUBTRACTION));
         this.ui.onStartSurvivalClick(() => this.startGame(GameModes.SUBTRACTION_SURVIVAL));

@@ -47,7 +47,14 @@
             </div>
         </div>
 
-        <div class="mode-buttons">
+        <div id="mic-blocked" class="mic-blocked hidden">
+            <div class="mic-blocked-icon">🎤</div>
+            <p class="mic-blocked-title" data-i18n="micBlocked">Microphone access is blocked</p>
+            <p class="mic-blocked-text" data-i18n="micBlockedHint">Please allow microphone access in your browser settings to play</p>
+            <button id="request-mic-btn" class="btn btn-primary" data-i18n="requestMic">Request Microphone Access</button>
+        </div>
+
+        <div id="mode-buttons" class="mode-buttons hidden">
             <button id="start-btn" class="btn btn-primary" disabled data-i18n="nameTheNumber">Name the Number</button>
             <button id="start-sum-btn" class="btn btn-primary" disabled data-i18n="sumBefore10">Sum before 10</button>
             <button id="start-sum-survival-btn" class="btn btn-primary" disabled data-i18n="sumSurvival">Sum Survival</button>
