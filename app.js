@@ -513,6 +513,8 @@ class SpeechRecognizer {
         this.onEnd = null;
         this.onError = null;
         this.transcriptOffset = 0;
+        this.lastKnownLength = 0;
+        this.sessionId = 0;
     }
 
     static isSupported() {
@@ -534,47 +536,65 @@ class SpeechRecognizer {
         this.recognition.interimResults = true;
         this.recognition.lang = this.lang;
 
+        // Capture session ID for this recognition instance
+        const mySessionId = this.sessionId;
+
         this.recognition.onstart = () => {
-            logger.log('SPEECH', 'started');
+            if (this.sessionId !== mySessionId) return;  // Stale callback
+            logger.log('SPEECH', 'started', { session: mySessionId });
             this.onStart?.();
         };
 
         this.recognition.onresult = (event) => {
+            if (this.sessionId !== mySessionId) return;  // Stale callback
             let fullTranscript = '';
             for (let i = 0; i < event.results.length; i++) {
                 fullTranscript += event.results[i][0].transcript;
             }
+            // Track current length for markStartPoint()
+            this.lastKnownLength = fullTranscript.length;
             const newContent = fullTranscript.substring(this.transcriptOffset);
-            logger.log('SPEECH', 'result', { new: newContent, full: fullTranscript });
+            logger.log('SPEECH', 'result', { new: newContent, full: fullTranscript, session: mySessionId });
             this.onResult?.(newContent, fullTranscript);
         };
 
         this.recognition.onerror = (event) => {
-            logger.log('SPEECH', 'error', { error: event.error });
+            if (this.sessionId !== mySessionId) return;  // Stale callback
+            logger.log('SPEECH', 'error', { error: event.error, session: mySessionId });
             this.onError?.(event.error);
         };
 
         this.recognition.onend = () => {
-            logger.log('SPEECH', 'ended');
+            if (this.sessionId !== mySessionId) return;  // Stale callback
+            logger.log('SPEECH', 'ended', { session: mySessionId });
             this.onEnd?.();
         };
     }
 
     start() {
         if (!this.recognition) {
+            this.sessionId++;  // New session
             this.setup();
         }
         this.transcriptOffset = 0;
+        this.lastKnownLength = 0;
         this.recognition.start();
     }
 
     stop() {
         this.recognition?.stop();
+        this.recognition = null;  // Force fresh instance on next start
     }
 
     clearBuffer(currentTranscriptLength) {
         logger.log('SPEECH', 'buffer cleared', { offset: currentTranscriptLength });
         this.transcriptOffset = currentTranscriptLength;
+    }
+
+    // Mark current position as the start point - ignore all previous speech
+    markStartPoint() {
+        this.transcriptOffset = this.lastKnownLength;
+        logger.log('SPEECH', 'start point marked', { offset: this.transcriptOffset });
     }
 }
 
@@ -1500,6 +1520,7 @@ class App {
         this.isRestarting = false;
         this.isResuming = false;
         this.isGameActive = false;
+        this.isCountingDown = false;
         this.inGracePeriod = false;
         this.gracePeriodTimeout = null;
         this.currentLang = 'en-US';
@@ -1687,6 +1708,7 @@ class App {
 
     startPregameCountdown() {
         let count = CONFIG.PREGAME_COUNTDOWN_SECONDS;
+        this.isCountingDown = true;
         this.ui.showScreen('countdown');
         this.ui.setCountdownNumber(count);
 
@@ -1701,6 +1723,9 @@ class App {
         const instructionKey = instructionKeys[this.currentMode] || 'instructionNameTheNumber';
         this.ui.setGameInstruction(this.ui.getTranslation(this.currentLang, instructionKey));
 
+        // Start recognition early so it's ready when game begins
+        this.recognizer.start();
+
         this.sound.playCountdown();
 
         const countdownInterval = setInterval(() => {
@@ -1711,48 +1736,16 @@ class App {
             } else {
                 clearInterval(countdownInterval);
                 this.sound.playGo();
-                this.recognizer.start();
+                this.isCountingDown = false;
+                this.beginGame();
             }
         }, CONFIG.COUNTDOWN_INTERVAL_MS);
     }
 
-    stopGame() {
-        logger.log('GAME', 'stopped');
-        this.isGameActive = false;
-        this.clearGracePeriod();
-        this.timer.stop();
+    beginGame() {
+        // Restart recognition for a fresh, responsive session
         this.recognizer.stop();
-    }
-
-    restartGame() {
-        logger.log('GAME', 'restarting');
-        this.isRestarting = true;
-        this.clearGracePeriod();
-        this.timer.stop();
-        this.recognizer.stop();
-        this.startGame(this.currentMode);
-    }
-
-    clearGracePeriod() {
-        if (this.gracePeriodTimeout) {
-            clearTimeout(this.gracePeriodTimeout);
-            this.gracePeriodTimeout = null;
-        }
-        this.inGracePeriod = false;
-    }
-
-    goToMainMenu() {
-        this.ui.showScreen('setup');
-        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-    }
-
-    handleRecognitionStart() {
-        // If resuming after silence timeout, just log and continue
-        if (this.isResuming) {
-            logger.log('SPEECH', 'resumed');
-            this.isResuming = false;
-            return;
-        }
+        this.recognizer.start();
 
         logger.newSession();
         logger.log('GAME', 'started', { mode: this.currentMode, lang: this.currentLang });
@@ -1787,6 +1780,54 @@ class App {
         this.ui.updateTimer(this.timer.duration, this.timer.duration);
 
         this.timer.start();
+    }
+
+    stopGame() {
+        logger.log('GAME', 'stopped');
+        this.isGameActive = false;
+        this.clearGracePeriod();
+        this.timer.stop();
+        this.recognizer.stop();
+    }
+
+    restartGame() {
+        logger.log('GAME', 'restarting');
+        this.isRestarting = true;
+        this.clearGracePeriod();
+        this.timer.stop();
+        this.recognizer.stop();
+        this.startGame(this.currentMode);
+    }
+
+    clearGracePeriod() {
+        if (this.gracePeriodTimeout) {
+            clearTimeout(this.gracePeriodTimeout);
+            this.gracePeriodTimeout = null;
+        }
+        this.inGracePeriod = false;
+    }
+
+    goToMainMenu() {
+        this.ui.showScreen('setup');
+        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+    }
+
+    handleRecognitionStart() {
+        // During countdown, recognition started early - don't start game yet
+        if (this.isCountingDown) {
+            logger.log('SPEECH', 'started during countdown');
+            return;
+        }
+
+        // If resuming after silence timeout, just log and continue
+        if (this.isResuming) {
+            logger.log('SPEECH', 'resumed');
+            this.isResuming = false;
+            return;
+        }
+
+        // Recognition restarted mid-game (e.g., after error recovery)
+        logger.log('SPEECH', 'restarted');
     }
 
     handleRecognitionResult(newContent, fullTranscript) {
