@@ -1520,29 +1520,30 @@ class App {
     }
 
     async checkMicPermission() {
+        // Default: show buttons, enable them
+        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+        this.ui.showModeButtons();
+        this.ui.setStartButtonEnabled(true);
+
         try {
             const result = await navigator.permissions.query({ name: 'microphone' });
-            this.handleMicPermissionState(result.state);
-            result.onchange = () => this.handleMicPermissionState(result.state);
+            if (result.state === 'denied') {
+                this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
+                this.ui.showMicBlocked();
+            }
+            result.onchange = () => {
+                if (result.state === 'denied') {
+                    this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
+                    this.ui.showMicBlocked();
+                } else {
+                    this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+                    this.ui.showModeButtons();
+                    this.ui.setStartButtonEnabled(true);
+                }
+            };
         } catch {
-            // Permissions API not supported, try to request directly
-            this.requestMicAccess();
-        }
-    }
-
-    handleMicPermissionState(state) {
-        if (state === 'granted') {
-            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-            this.ui.showModeButtons();
-            this.ui.setStartButtonEnabled(true);
-        } else if (state === 'denied') {
-            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
-            this.ui.showMicBlocked();
-        } else {
-            // prompt state - show buttons but permission will be asked on game start
-            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-            this.ui.showModeButtons();
-            this.ui.setStartButtonEnabled(true);
+            // Permissions API not supported - just keep buttons visible
+            // Permission will be requested when game starts
         }
     }
 
@@ -1550,16 +1551,15 @@ class App {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(track => track.stop());
-            this.handleMicPermissionState('granted');
+            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+            this.ui.showModeButtons();
+            this.ui.setStartButtonEnabled(true);
         } catch (err) {
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                this.handleMicPermissionState('denied');
-            } else {
-                // Other error, still show buttons and let it fail on game start
-                this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-                this.ui.showModeButtons();
-                this.ui.setStartButtonEnabled(true);
+                this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
+                this.ui.showMicBlocked();
             }
+            // Other errors: keep current state
         }
     }
 
