@@ -1701,6 +1701,9 @@ class App {
         const instructionKey = instructionKeys[this.currentMode] || 'instructionNameTheNumber';
         this.ui.setGameInstruction(this.ui.getTranslation(this.currentLang, instructionKey));
 
+        // Start recognition early so it's ready when game begins
+        this.recognizer.start();
+
         this.sound.playCountdown();
 
         const countdownInterval = setInterval(() => {
@@ -1711,7 +1714,6 @@ class App {
             } else {
                 clearInterval(countdownInterval);
                 this.sound.playGo();
-                this.recognizer.start();
             }
         }, CONFIG.COUNTDOWN_INTERVAL_MS);
     }
