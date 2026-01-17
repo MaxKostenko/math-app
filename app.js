@@ -1743,8 +1743,9 @@ class App {
     }
 
     beginGame() {
-        // Reset speech buffer to ignore anything said during countdown
-        this.recognizer.markStartPoint();
+        // Restart recognition for a fresh, responsive session
+        this.recognizer.stop();
+        this.recognizer.start();
 
         logger.newSession();
         logger.log('GAME', 'started', { mode: this.currentMode, lang: this.currentLang });
