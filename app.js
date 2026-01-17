@@ -514,6 +514,7 @@ class SpeechRecognizer {
         this.onError = null;
         this.transcriptOffset = 0;
         this.lastKnownLength = 0;
+        this.sessionId = 0;
     }
 
     static isSupported() {
@@ -535,12 +536,17 @@ class SpeechRecognizer {
         this.recognition.interimResults = true;
         this.recognition.lang = this.lang;
 
+        // Capture session ID for this recognition instance
+        const mySessionId = this.sessionId;
+
         this.recognition.onstart = () => {
-            logger.log('SPEECH', 'started');
+            if (this.sessionId !== mySessionId) return;  // Stale callback
+            logger.log('SPEECH', 'started', { session: mySessionId });
             this.onStart?.();
         };
 
         this.recognition.onresult = (event) => {
+            if (this.sessionId !== mySessionId) return;  // Stale callback
             let fullTranscript = '';
             for (let i = 0; i < event.results.length; i++) {
                 fullTranscript += event.results[i][0].transcript;
@@ -548,23 +554,26 @@ class SpeechRecognizer {
             // Track current length for markStartPoint()
             this.lastKnownLength = fullTranscript.length;
             const newContent = fullTranscript.substring(this.transcriptOffset);
-            logger.log('SPEECH', 'result', { new: newContent, full: fullTranscript });
+            logger.log('SPEECH', 'result', { new: newContent, full: fullTranscript, session: mySessionId });
             this.onResult?.(newContent, fullTranscript);
         };
 
         this.recognition.onerror = (event) => {
-            logger.log('SPEECH', 'error', { error: event.error });
+            if (this.sessionId !== mySessionId) return;  // Stale callback
+            logger.log('SPEECH', 'error', { error: event.error, session: mySessionId });
             this.onError?.(event.error);
         };
 
         this.recognition.onend = () => {
-            logger.log('SPEECH', 'ended');
+            if (this.sessionId !== mySessionId) return;  // Stale callback
+            logger.log('SPEECH', 'ended', { session: mySessionId });
             this.onEnd?.();
         };
     }
 
     start() {
         if (!this.recognition) {
+            this.sessionId++;  // New session
             this.setup();
         }
         this.transcriptOffset = 0;
