@@ -77,6 +77,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API is supported. Select a mode to begin.',
         speechNotSupported: 'Speech API is NOT supported in this browser. Please use Chrome.',
         micDenied: 'Microphone permission denied. Please allow microphone access.',
+        micTesting: 'Testing microphone...',
         micBlocked: 'Microphone access is blocked',
         micBlockedHint: 'Please allow microphone access in your browser settings to play',
         requestMic: 'Request Microphone Access',
@@ -116,6 +117,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API підтримується. Оберіть режим щоб почати.',
         speechNotSupported: 'Speech API не підтримується в цьому браузері. Використовуйте Chrome.',
         micDenied: 'Доступ до мікрофона заборонено. Дозвольте доступ до мікрофона.',
+        micTesting: 'Перевірка мікрофона...',
         micBlocked: 'Доступ до мікрофона заблоковано',
         micBlockedHint: 'Дозвольте доступ до мікрофона в налаштуваннях браузера',
         requestMic: 'Запитати доступ до мікрофона',
@@ -155,6 +157,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API wordt ondersteund. Kies een modus om te beginnen.',
         speechNotSupported: 'Speech API wordt niet ondersteund in deze browser. Gebruik Chrome.',
         micDenied: 'Microfoontoegang geweigerd. Sta microfoon toegang toe.',
+        micTesting: 'Microfoon testen...',
         micBlocked: 'Microfoontoegang is geblokkeerd',
         micBlockedHint: 'Sta microfoontoegang toe in je browserinstellingen om te spelen',
         requestMic: 'Microfoontoegang aanvragen',
@@ -194,6 +197,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API destekleniyor. Başlamak için bir mod seçin.',
         speechNotSupported: 'Speech API bu tarayıcıda desteklenmiyor. Chrome kullanın.',
         micDenied: 'Mikrofon erişimi reddedildi. Mikrofon erişimine izin verin.',
+        micTesting: 'Mikrofon test ediliyor...',
         micBlocked: 'Mikrofon erişimi engellendi',
         micBlockedHint: 'Oynamak için tarayıcı ayarlarından mikrofon erişimine izin verin',
         requestMic: 'Mikrofon Erişimi İste',
@@ -233,6 +237,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API jest obsługiwane. Wybierz tryb aby rozpocząć.',
         speechNotSupported: 'Speech API nie jest obsługiwane w tej przeglądarce. Użyj Chrome.',
         micDenied: 'Odmowa dostępu do mikrofonu. Zezwól na dostęp do mikrofonu.',
+        micTesting: 'Testowanie mikrofonu...',
         micBlocked: 'Dostęp do mikrofonu jest zablokowany',
         micBlockedHint: 'Zezwól na dostęp do mikrofonu w ustawieniach przeglądarki',
         requestMic: 'Poproś o dostęp do mikrofonu',
@@ -272,6 +277,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API падтрымліваецца. Абярыце рэжым каб пачаць.',
         speechNotSupported: 'Speech API не падтрымліваецца ў гэтым браўзеры. Выкарыстоўвайце Chrome.',
         micDenied: 'Доступ да мікрафона забаронены. Дазвольце доступ да мікрафона.',
+        micTesting: 'Праверка мікрафона...',
         micBlocked: 'Доступ да мікрафона заблакаваны',
         micBlockedHint: 'Дазвольце доступ да мікрафона ў наладах браўзера',
         requestMic: 'Запытаць доступ да мікрафона',
@@ -311,6 +317,7 @@ const TRANSLATIONS = {
         speechSupported: 'Speech API stöds. Välj ett läge för att börja.',
         speechNotSupported: 'Speech API stöds inte i denna webbläsare. Använd Chrome.',
         micDenied: 'Mikrofonåtkomst nekad. Tillåt mikrofonåtkomst.',
+        micTesting: 'Testar mikrofon...',
         micBlocked: 'Mikrofonåtkomst är blockerad',
         micBlockedHint: 'Tillåt mikrofonåtkomst i webbläsarens inställningar för att spela',
         requestMic: 'Begär mikrofonåtkomst',
@@ -1520,29 +1527,74 @@ class App {
     }
 
     async checkMicPermission() {
-        try {
-            const result = await navigator.permissions.query({ name: 'microphone' });
-            this.handleMicPermissionState(result.state);
-            result.onchange = () => this.handleMicPermissionState(result.state);
-        } catch {
-            // Permissions API not supported, try to request directly
-            this.requestMicAccess();
-        }
+        // Show testing status while we verify mic works
+        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micTesting'));
+
+        // Run actual speech recognition test
+        this.testMicRecognition();
     }
 
-    handleMicPermissionState(state) {
-        if (state === 'granted') {
+    testMicRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const testRecognition = new SpeechRecognition();
+        testRecognition.lang = this.currentLang;
+        testRecognition.continuous = false;
+        testRecognition.interimResults = false;
+
+        let resolved = false;
+
+        const onSuccess = () => {
+            if (resolved) return;
+            resolved = true;
+            testRecognition.stop();
+            logger.log('MIC_TEST', 'success - recognition started');
             this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
             this.ui.showModeButtons();
             this.ui.setStartButtonEnabled(true);
-        } else if (state === 'denied') {
+        };
+
+        const onFailure = (reason) => {
+            if (resolved) return;
+            resolved = true;
+            testRecognition.stop();
+            logger.log('MIC_TEST', 'failed', { reason });
             this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
             this.ui.showMicBlocked();
-        } else {
-            // prompt state - show buttons but permission will be asked on game start
-            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-            this.ui.showModeButtons();
-            this.ui.setStartButtonEnabled(true);
+        };
+
+        testRecognition.onstart = () => {
+            onSuccess();
+        };
+
+        testRecognition.onerror = (event) => {
+            if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                onFailure(event.error);
+            } else {
+                // Other errors (no-speech, network, etc.) mean mic access worked
+                onSuccess();
+            }
+        };
+
+        testRecognition.onend = () => {
+            // If we get here without resolving, consider it success
+            // (recognition ended normally without errors)
+            if (!resolved) {
+                onSuccess();
+            }
+        };
+
+        // Timeout fallback - if nothing happens in 3 seconds, assume success
+        setTimeout(() => {
+            if (!resolved) {
+                logger.log('MIC_TEST', 'timeout - assuming success');
+                onSuccess();
+            }
+        }, 3000);
+
+        try {
+            testRecognition.start();
+        } catch (err) {
+            onFailure(err.message);
         }
     }
 
@@ -1550,16 +1602,15 @@ class App {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(track => track.stop());
-            this.handleMicPermissionState('granted');
+            // Run recognition test after getting mic access
+            this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micTesting'));
+            this.testMicRecognition();
         } catch (err) {
             if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                this.handleMicPermissionState('denied');
-            } else {
-                // Other error, still show buttons and let it fail on game start
-                this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-                this.ui.showModeButtons();
-                this.ui.setStartButtonEnabled(true);
+                this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'micDenied'));
+                this.ui.showMicBlocked();
             }
+            // Other errors: keep current state
         }
     }
 
