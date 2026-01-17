@@ -72,6 +72,10 @@ class Calculator {
     inputOperator(nextOperator) {
         const inputValue = parseFloat(this.currentValue);
 
+        if (isNaN(inputValue)) {
+            return;
+        }
+
         if (this.previousValue === '') {
             this.previousValue = inputValue;
         } else if (this.operator) {
@@ -87,6 +91,10 @@ class Calculator {
 
     calculate() {
         const inputValue = parseFloat(this.currentValue);
+
+        if (isNaN(inputValue)) {
+            return;
+        }
 
         if (this.operator && this.previousValue !== '') {
             const result = this.performCalculation(this.operator, this.previousValue, inputValue);
@@ -107,7 +115,10 @@ class Calculator {
             case '*':
                 return leftOperand * rightOperand;
             case '/':
-                return rightOperand !== 0 ? leftOperand / rightOperand : 0;
+                if (rightOperand === 0) {
+                    return 'Error';
+                }
+                return leftOperand / rightOperand;
             default:
                 return rightOperand;
         }
