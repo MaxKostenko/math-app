@@ -574,6 +574,7 @@ class SpeechRecognizer {
 
     stop() {
         this.recognition?.stop();
+        this.recognition = null;  // Force fresh instance on next start
     }
 
     clearBuffer(currentTranscriptLength) {
