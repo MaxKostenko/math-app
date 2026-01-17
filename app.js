@@ -1500,6 +1500,7 @@ class App {
         this.isRestarting = false;
         this.isResuming = false;
         this.isGameActive = false;
+        this.isCountingDown = false;
         this.inGracePeriod = false;
         this.gracePeriodTimeout = null;
         this.currentLang = 'en-US';
@@ -1687,6 +1688,7 @@ class App {
 
     startPregameCountdown() {
         let count = CONFIG.PREGAME_COUNTDOWN_SECONDS;
+        this.isCountingDown = true;
         this.ui.showScreen('countdown');
         this.ui.setCountdownNumber(count);
 
@@ -1714,48 +1716,13 @@ class App {
             } else {
                 clearInterval(countdownInterval);
                 this.sound.playGo();
+                this.isCountingDown = false;
+                this.beginGame();
             }
         }, CONFIG.COUNTDOWN_INTERVAL_MS);
     }
 
-    stopGame() {
-        logger.log('GAME', 'stopped');
-        this.isGameActive = false;
-        this.clearGracePeriod();
-        this.timer.stop();
-        this.recognizer.stop();
-    }
-
-    restartGame() {
-        logger.log('GAME', 'restarting');
-        this.isRestarting = true;
-        this.clearGracePeriod();
-        this.timer.stop();
-        this.recognizer.stop();
-        this.startGame(this.currentMode);
-    }
-
-    clearGracePeriod() {
-        if (this.gracePeriodTimeout) {
-            clearTimeout(this.gracePeriodTimeout);
-            this.gracePeriodTimeout = null;
-        }
-        this.inGracePeriod = false;
-    }
-
-    goToMainMenu() {
-        this.ui.showScreen('setup');
-        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
-    }
-
-    handleRecognitionStart() {
-        // If resuming after silence timeout, just log and continue
-        if (this.isResuming) {
-            logger.log('SPEECH', 'resumed');
-            this.isResuming = false;
-            return;
-        }
-
+    beginGame() {
         logger.newSession();
         logger.log('GAME', 'started', { mode: this.currentMode, lang: this.currentLang });
 
@@ -1789,6 +1756,54 @@ class App {
         this.ui.updateTimer(this.timer.duration, this.timer.duration);
 
         this.timer.start();
+    }
+
+    stopGame() {
+        logger.log('GAME', 'stopped');
+        this.isGameActive = false;
+        this.clearGracePeriod();
+        this.timer.stop();
+        this.recognizer.stop();
+    }
+
+    restartGame() {
+        logger.log('GAME', 'restarting');
+        this.isRestarting = true;
+        this.clearGracePeriod();
+        this.timer.stop();
+        this.recognizer.stop();
+        this.startGame(this.currentMode);
+    }
+
+    clearGracePeriod() {
+        if (this.gracePeriodTimeout) {
+            clearTimeout(this.gracePeriodTimeout);
+            this.gracePeriodTimeout = null;
+        }
+        this.inGracePeriod = false;
+    }
+
+    goToMainMenu() {
+        this.ui.showScreen('setup');
+        this.ui.setPermissionStatus(this.ui.getTranslation(this.currentLang, 'speechSupported'));
+    }
+
+    handleRecognitionStart() {
+        // During countdown, recognition started early - don't start game yet
+        if (this.isCountingDown) {
+            logger.log('SPEECH', 'started during countdown');
+            return;
+        }
+
+        // If resuming after silence timeout, just log and continue
+        if (this.isResuming) {
+            logger.log('SPEECH', 'resumed');
+            this.isResuming = false;
+            return;
+        }
+
+        // Recognition restarted mid-game (e.g., after error recovery)
+        logger.log('SPEECH', 'restarted');
     }
 
     handleRecognitionResult(newContent, fullTranscript) {
