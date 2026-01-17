@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Training App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Screen 1: Setup -->
+    <div id="setup-screen" class="screen">
+        <h1>Math Training App</h1>
+        <p class="mic-notice" data-i18n="micRequired">Microphone required - answer by speaking</p>
+        <p id="permission-status">Checking Speech API support...</p>
+
+        <div class="language-selector">
+            <h2 data-i18n="selectLanguage">Select Language</h2>
+            <div class="language-options">
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="en-US" checked>
+                    <span>English</span>
+                </label>
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="uk-UA">
+                    <span>Українська</span>
+                </label>
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="nl-NL">
+                    <span>Nederlands</span>
+                </label>
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="tr-TR">
+                    <span>Türkçe</span>
+                </label>
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="pl-PL">
+                    <span>Polski</span>
+                </label>
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="be-BY">
+                    <span>Беларуская</span>
+                </label>
+                <label class="lang-option">
+                    <input type="radio" name="lang" value="sv-SE">
+                    <span>Svenska</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="mode-buttons">
+            <button id="start-btn" class="btn btn-primary" disabled data-i18n="nameTheNumber">Name the Number</button>
+            <button id="start-sum-btn" class="btn btn-primary" disabled data-i18n="sumBefore10">Sum before 10</button>
+            <button id="start-sum-survival-btn" class="btn btn-primary" disabled data-i18n="sumSurvival">Sum Survival</button>
+            <button id="start-subtraction-btn" class="btn btn-primary" disabled data-i18n="subtractionBefore10">Subtraction before 10</button>
+            <button id="start-survival-btn" class="btn btn-primary" disabled data-i18n="subtractionSurvival">Subtraction Survival</button>
+        </div>
+    </div>
+
+    <!-- Screen 2: Countdown -->
+    <div id="countdown-screen" class="screen hidden">
+        <div class="countdown-container">
+            <p class="countdown-label" data-i18n="getReady">Get Ready!</p>
+            <div id="countdown-number" class="countdown-number">3</div>
+            <p id="game-instruction" class="game-instruction"></p>
+        </div>
+    </div>
+
+    <!-- Screen 3: Game -->
+    <div id="game-screen" class="screen hidden">
+        <div class="timer-bar">
+            <div id="timer-fill" class="timer-fill"></div>
+        </div>
+        <div id="timer-display" class="timer-display">0:20</div>
+
+        <div class="game-container">
+            <!-- Left side: Target number -->
+            <div class="game-left">
+                <div class="target-section">
+                    <p class="label" data-i18n="sayThisNumber">Say this number:</p>
+                    <div id="target-number" class="target-number">-</div>
+                    <div id="recognized-number" class="recognized">-</div>
+                </div>
+
+                <div class="game-buttons">
+                    <button id="restart-btn" class="btn btn-primary" data-i18n="restart">Restart</button>
+                    <button id="stop-btn" class="btn btn-danger" data-i18n="stop">Stop</button>
+                </div>
+            </div>
+
+            <!-- Right side: Score and log -->
+            <div class="game-right">
+                <div class="score-section">
+                    <p class="label" data-i18n="score">Score</p>
+                    <div id="score" class="score">0</div>
+                </div>
+
+                <div class="log-section">
+                    <p class="label" data-i18n="answerLog">Answer Log</p>
+                    <div id="answer-log" class="answer-log"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="transcript-section">
+            <p class="label" data-i18n="rawTranscript">Raw transcript:</p>
+            <div id="transcript" class="transcript">-</div>
+        </div>
+    </div>
+
+    <!-- Screen 4: Results -->
+    <div id="results-screen" class="screen hidden">
+        <h1 data-i18n="timesUp">Time's Up!</h1>
+
+        <div class="results-container">
+            <div class="results-score-section">
+                <p class="label" data-i18n="finalScore">Final Score</p>
+                <div id="final-score" class="final-score">0</div>
+            </div>
+
+            <div class="results-stats">
+                <div class="stat-item">
+                    <span class="stat-value" id="correct-count">0</span>
+                    <span class="stat-label" data-i18n="completed">Completed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="wrong-count">-</span>
+                    <span class="stat-label" data-i18n="avgTime">Avg Time</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value" id="accuracy">0/min</span>
+                    <span class="stat-label" data-i18n="rate">Rate</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="leaderboard-section">
+            <h2 data-i18n="leaderboard">Leaderboard</h2>
+            <div id="leaderboard-list" class="leaderboard-list"></div>
+        </div>
+
+        <div class="results-buttons">
+            <button id="play-again-btn" class="btn btn-primary" data-i18n="playAgain">Play Again</button>
+            <button id="main-menu-btn" class="btn btn-secondary" data-i18n="mainMenu">Main Menu</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
