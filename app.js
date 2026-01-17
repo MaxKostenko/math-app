@@ -513,6 +513,7 @@ class SpeechRecognizer {
         this.onEnd = null;
         this.onError = null;
         this.transcriptOffset = 0;
+        this.lastKnownLength = 0;
     }
 
     static isSupported() {
@@ -544,6 +545,8 @@ class SpeechRecognizer {
             for (let i = 0; i < event.results.length; i++) {
                 fullTranscript += event.results[i][0].transcript;
             }
+            // Track current length for markStartPoint()
+            this.lastKnownLength = fullTranscript.length;
             const newContent = fullTranscript.substring(this.transcriptOffset);
             logger.log('SPEECH', 'result', { new: newContent, full: fullTranscript });
             this.onResult?.(newContent, fullTranscript);
@@ -575,6 +578,12 @@ class SpeechRecognizer {
     clearBuffer(currentTranscriptLength) {
         logger.log('SPEECH', 'buffer cleared', { offset: currentTranscriptLength });
         this.transcriptOffset = currentTranscriptLength;
+    }
+
+    // Mark current position as the start point - ignore all previous speech
+    markStartPoint() {
+        this.transcriptOffset = this.lastKnownLength;
+        logger.log('SPEECH', 'start point marked', { offset: this.transcriptOffset });
     }
 }
 
@@ -1723,6 +1732,9 @@ class App {
     }
 
     beginGame() {
+        // Reset speech buffer to ignore anything said during countdown
+        this.recognizer.markStartPoint();
+
         logger.newSession();
         logger.log('GAME', 'started', { mode: this.currentMode, lang: this.currentLang });
 
