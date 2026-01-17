@@ -16,11 +16,11 @@ Fully functional vanilla JS app with five game modes, voice recognition, and lea
 - "Microphone required" notice (translated)
 - Language selector (7 languages)
 - Speech API support detection
-- **Microphone permission check:**
-  - If granted: shows game mode buttons
-  - If denied: shows "Mic blocked" message with "Request Access" button
-  - If prompt: shows buttons (permission asked on game start)
-  - Monitors permission changes and updates UI automatically
+- **Microphone test on load:**
+  - Runs actual speech recognition test (not just permission check)
+  - Shows "Testing microphone..." status during test
+  - If recognition starts successfully: shows game mode buttons
+  - If not-allowed error: shows "Mic blocked" message with "Request Access" button
 - CSS grid button layout (2 columns on desktop, 1 on mobile):
   - **Full width:** "Name the Number" (20-second game)
   - **Row 1:** "Sum before 10" | "Sum Survival"
@@ -32,6 +32,8 @@ Fully functional vanilla JS app with five game modes, voice recognition, and lea
 - Large animated countdown (3, 2, 1)
 - Pulse animation on numbers
 - Sound effects for countdown ticks
+- **Speech recognition starts during countdown** (warm-up period)
+- Recognition restarts fresh when game begins for responsiveness
 - Game-specific instruction text (translated):
   - Name the Number: "Say the number shown on screen"
   - Subtraction/Sum: "Say the answer to the problem"
@@ -215,8 +217,11 @@ SumSurvivalGame.TIME_BONUS = 3
 ### Speech Recognition Handling
 - `continuous: true` and `interimResults: true` for real-time feedback
 - **Transcript buffer:** Uses offset tracking to ignore already-processed speech when new problem appears
+- **Session ID tracking:** Each recognition session has unique ID; stale callbacks from old sessions are ignored
+- **Fresh restart on game begin:** Recognition stops and restarts when game begins for responsive first answer
 - **Silence timeout:** Speech API stops after ~7s of silence; app auto-restarts recognition without resetting game
 - **no-speech error:** Ignored (not a real error, just silence detected)
+- **Note:** SpeechGrammarList (custom word dictionaries) is deprecated and ignored by Chrome
 
 ## Notes
 - Web Speech API works best in Chrome
