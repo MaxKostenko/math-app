@@ -9,7 +9,11 @@ class Logger {
         const elapsed = ((Date.now() - this.startTime) / 1000).toFixed(2);
         const prefix = `[${this.sessionId}][${elapsed}s][${category}]`;
         if (data !== null) {
-            console.log(prefix, message, structuredClone(data));
+            try {
+                console.log(prefix, message, structuredClone(data));
+            } catch {
+                console.log(prefix, message, data);
+            }
         } else {
             console.log(prefix, message);
         }
@@ -546,6 +550,7 @@ class SpeechRecognizer {
         };
 
         this.recognition.onresult = (event) => {
+            logger.log('FULL SPEECH', 'result', event.results);
             if (this.sessionId !== mySessionId) return;  // Stale callback
             let fullTranscript = '';
             for (let i = 0; i < event.results.length; i++) {
@@ -1743,9 +1748,8 @@ class App {
     }
 
     beginGame() {
-        // Restart recognition for a fresh, responsive session
-        this.recognizer.stop();
-        this.recognizer.start();
+        // Mark start point to ignore any speech from countdown period
+        this.recognizer.markStartPoint();
 
         logger.newSession();
         logger.log('GAME', 'started', { mode: this.currentMode, lang: this.currentLang });
